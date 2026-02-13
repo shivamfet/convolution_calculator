@@ -397,10 +397,8 @@
                 </div>
 
                 <div class="animation-controls">
-                    <h3>🎮 Animation</h3>
+                    <h3>🎮 Animation Controls</h3>
                     <button class="btn btn-primary" id="playBtn">▶️ Play Animation</button>
-                    <button class="btn btn-secondary" id="stepBtn">⏭️ Next Step</button>
-                    <button class="btn btn-secondary" id="generateBtn">⚡ Generate All</button>
                     <button class="btn btn-secondary" id="resetBtn">🔄 Reset</button>
 
                     <div class="speed-control">
@@ -837,8 +835,6 @@
 
         // Event listeners
         document.getElementById('playBtn').addEventListener('click', playAnimation);
-        document.getElementById('stepBtn').addEventListener('click', nextStep);
-        document.getElementById('generateBtn').addEventListener('click', generateAll);
         document.getElementById('resetBtn').addEventListener('click', reset);
 
         [inputHeightSlider, inputWidthSlider, filterHeightSlider, filterWidthSlider, strideSlider, paddingSlider].forEach(slider => {
