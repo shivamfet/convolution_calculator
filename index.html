@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Convolution Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .controls-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            height: fit-content;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-size: 1em;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .value-display {
+            min-width: 50px;
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1em;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 6px 8px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1em;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input[type="number"]:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+        }
+
+        input[type="number"].input-value {
+            border-color: #3498db;
+        }
+
+        input[type="number"].filter-value {
+            border-color: #e74c3c;
+        }
+
+        input[type="number"].stride-value {
+            border-color: #f39c12;
+        }
+
+        input[type="number"].padding-value {
+            border-color: #9b59b6;
+        }
+
+        input[type="number"].input-value:focus {
+            border-color: #2980b9;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        input[type="number"].filter-value:focus {
+            border-color: #c0392b;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+
+        input[type="number"].stride-value:focus {
+            border-color: #e67e22;
+            box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1);
+        }
+
+        input[type="number"].padding-value:focus {
+            border-color: #8e44ad;
+            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1);
+        }
+
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .separator {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #ddd, transparent);
+            margin: 20px 0;
+        }
+
+        .animation-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .animation-controls h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #34495e;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #2c3e50;
+        }
+
+        .speed-control {
+            margin-top: 15px;
+        }
+
+        .visualization-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .canvas-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        canvas {
+            width: 100%;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+
+        #mainCanvas {
+            height: 500px;
+        }
+
+        .info-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-card h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .info-card .value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .result-box {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .result-valid {
+            background: #d4edda;
+            color: #27ae60;
+            border: 2px solid #27ae60;
+        }
+
+        .result-invalid {
+            background: #f8d7da;
+            color: #c0392b;
+            border: 2px solid #c0392b;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #2c3e50;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Animated Convolution Visualizer</h1>
+            <p>Watch how the filter slides over the input with stride and padding</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <h3 style="color: #3498db; margin-bottom: 15px;">📐 Input Dimensions</h3>
+
+                <div class="control-group">
+                    <label>Input Height (Rows):</label>
+                    <div class="slider-container">
+                        <input type="range" id="inputHeight" min="4" max="16" value="8">
+                        <input type="number" id="inputHeightInput" class="input-value" min="4" max="16" value="8">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Input Width (Columns):</label>
+                    <div class="slider-container">
+                        <input type="range" id="inputWidth" min="4" max="16" value="8">
+                        <input type="number" id="inputWidthInput" class="input-value" min="4" max="16" value="8">
+                    </div>
+                </div>
+
+                <div class="separator"></div>
+
+                <h3 style="color: #e74c3c; margin-bottom: 15px;">🔲 Filter Dimensions</h3>
+
+                <div class="control-group">
+                    <label>Filter Height (Rows):</label>
+                    <div class="slider-container">
+                        <input type="range" id="filterHeight" min="2" max="5" value="3">
+                        <input type="number" id="filterHeightInput" class="filter-value" min="2" max="5" value="3">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Filter Width (Columns):</label>
+                    <div class="slider-container">
+                        <input type="range" id="filterWidth" min="2" max="5" value="3">
+                        <input type="number" id="filterWidthInput" class="filter-value" min="2" max="5" value="3">
+                    </div>
+                </div>
+
+                <div class="separator"></div>
+
+                <h3 style="color: #f39c12; margin-bottom: 15px;">⚙️ Convolution Parameters</h3>
+
+                <div class="control-group">
+                    <label>Stride:</label>
+                    <div class="slider-container">
+                        <input type="range" id="stride" min="1" max="4" value="1">
+                        <input type="number" id="strideInput" class="stride-value" min="1" max="4" value="1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Padding:</label>
+                    <div class="slider-container">
+                        <input type="range" id="padding" min="0" max="3" value="0">
+                        <input type="number" id="paddingInput" class="padding-value" min="0" max="3" value="0">
+                    </div>
+                </div>
+
+                <div class="animation-controls">
+                    <h3>🎮 Animation</h3>
+                    <button class="btn btn-primary" id="playBtn">▶️ Play Animation</button>
+                    <button class="btn btn-secondary" id="stepBtn">⏭️ Next Step</button>
+                    <button class="btn btn-secondary" id="generateBtn">⚡ Generate All</button>
+                    <button class="btn btn-secondary" id="resetBtn">🔄 Reset</button>
+
+                    <div class="speed-control">
+                        <label>Animation Speed (ms):</label>
+                        <div class="slider-container">
+                            <input type="range" id="speed" min="100" max="2000" value="500" step="100">
+                            <input type="number" id="speedInput" min="100" max="2000" value="500" step="100">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="separator"></div>
+
+                <div style="background: white; padding: 15px; border-radius: 10px;">
+                    <h4 style="margin-bottom: 10px; color: #2c3e50;">Quick Presets:</h4>
+                    <button class="btn btn-secondary" onclick="setPreset(8, 8, 3, 3, 1, 0)">Square 8×8</button>
+                    <button class="btn btn-secondary" onclick="setPreset(8, 12, 3, 3, 1, 1)">Rectangle 8×12</button>
+                    <button class="btn btn-secondary" onclick="setPreset(10, 6, 3, 5, 1, 0)">Non-square Filter</button>
+                    <button class="btn btn-secondary" onclick="setPreset(8, 8, 3, 3, 2, 0)">Stride 2</button>
+                </div>
+            </div>
+
+            <!-- Visualization Panel -->
+            <div class="visualization-panel">
+                <div class="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+
+                <div class="info-panel">
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <h4>Input Dimensions</h4>
+                            <div class="value" id="inputDim">8 × 8</div>
+                        </div>
+                        <div class="info-card">
+                            <h4>Padded Input</h4>
+                            <div class="value" id="paddedDim">8 × 8</div>
+                        </div>
+                        <div class="info-card">
+                            <h4>Output Dimensions</h4>
+                            <div class="value" id="outputDim">6 × 6</div>
+                        </div>
+                        <div class="info-card">
+                            <h4>Current Position</h4>
+                            <div class="value" id="currentPos">0 / 36</div>
+                        </div>
+                    </div>
+
+                    <div class="result-box" id="resultBox"></div>
+
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(52, 152, 219, 0.3);"></div>
+                            <span>Input Image</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(155, 89, 182, 0.3);"></div>
+                            <span>Padding</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(231, 76, 60, 0.5);"></div>
+                            <span>Filter Position</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(46, 204, 113, 0.6);"></div>
+                            <span>Output Generated</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let animationTimer = null;
+        let currentStep = -1;  // Start with no output generated
+        let isPlaying = false;
+
+        // Get controls
+        const inputHeightSlider = document.getElementById('inputHeight');
+        const inputWidthSlider = document.getElementById('inputWidth');
+        const filterHeightSlider = document.getElementById('filterHeight');
+        const filterWidthSlider = document.getElementById('filterWidth');
+        const strideSlider = document.getElementById('stride');
+        const paddingSlider = document.getElementById('padding');
+        const speedSlider = document.getElementById('speed');
+
+        // Set canvas size
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Calculate output size
+        function calculateOutputSize(inputSize, filterSize, stride, padding) {
+            const paddedSize = inputSize + 2 * padding;
+            return Math.floor((paddedSize - filterSize) / stride) + 1;
+        }
+
+        // Get all filter positions
+        function getFilterPositions(inputHeight, inputWidth, filterHeight, filterWidth, stride, padding) {
+            const outputHeight = calculateOutputSize(inputHeight, filterHeight, stride, padding);
+            const outputWidth = calculateOutputSize(inputWidth, filterWidth, stride, padding);
+            const positions = [];
+
+            for (let oy = 0; oy < outputHeight; oy++) {
+                for (let ox = 0; ox < outputWidth; ox++) {
+                    const startX = ox * stride;
+                    const startY = oy * stride;
+                    positions.push({
+                        startX, startY,
+                        outputX: ox, outputY: oy
+                    });
+                }
+            }
+
+            return positions;
+        }
+
+        // Update displays
+        function updateDisplays() {
+            const inputHeight = parseInt(inputHeightSlider.value);
+            const inputWidth = parseInt(inputWidthSlider.value);
+            const filterHeight = parseInt(filterHeightSlider.value);
+            const filterWidth = parseInt(filterWidthSlider.value);
+            const stride = parseInt(strideSlider.value);
+            const padding = parseInt(paddingSlider.value);
+            const speed = parseInt(speedSlider.value);
+
+            // Sync input fields with sliders
+            document.getElementById('inputHeightInput').value = inputHeight;
+            document.getElementById('inputWidthInput').value = inputWidth;
+            document.getElementById('filterHeightInput').value = filterHeight;
+            document.getElementById('filterWidthInput').value = filterWidth;
+            document.getElementById('strideInput').value = stride;
+            document.getElementById('paddingInput').value = padding;
+            document.getElementById('speedInput').value = speed;
+
+            const paddedHeight = inputHeight + 2 * padding;
+            const paddedWidth = inputWidth + 2 * padding;
+            const outputHeight = calculateOutputSize(inputHeight, filterHeight, stride, padding);
+            const outputWidth = calculateOutputSize(inputWidth, filterWidth, stride, padding);
+            const isValid = outputHeight > 0 && outputWidth > 0 &&
+                           Number.isInteger(outputHeight) && Number.isInteger(outputWidth);
+
+            document.getElementById('inputDim').textContent = `${inputHeight} × ${inputWidth}`;
+            document.getElementById('paddedDim').textContent = `${paddedHeight} × ${paddedWidth}`;
+            document.getElementById('outputDim').textContent = `${outputHeight} × ${outputWidth}`;
+
+            const positions = getFilterPositions(inputHeight, inputWidth, filterHeight, filterWidth, stride, padding);
+            const totalSteps = positions.length;
+            const displayStep = currentStep < 0 ? 0 : Math.min(currentStep + 1, totalSteps);
+            document.getElementById('currentPos').textContent = `${displayStep} / ${totalSteps}`;
+
+            const resultBox = document.getElementById('resultBox');
+            if (isValid) {
+                resultBox.className = 'result-box result-valid';
+                resultBox.innerHTML = `✓ Valid Configuration<br>Output: ${outputHeight} × ${outputWidth} = ${outputHeight * outputWidth} features`;
+            } else {
+                resultBox.className = 'result-box result-invalid';
+                resultBox.innerHTML = `✗ Invalid Configuration<br>Output: ${outputHeight.toFixed(1)} × ${outputWidth.toFixed(1)} (not integers)`;
+            }
+        }
+
+        // Draw visualization
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const inputHeight = parseInt(inputHeightSlider.value);
+            const inputWidth = parseInt(inputWidthSlider.value);
+            const filterHeight = parseInt(filterHeightSlider.value);
+            const filterWidth = parseInt(filterWidthSlider.value);
+            const stride = parseInt(strideSlider.value);
+            const padding = parseInt(paddingSlider.value);
+
+            const paddedHeight = inputHeight + 2 * padding;
+            const paddedWidth = inputWidth + 2 * padding;
+            const outputHeight = calculateOutputSize(inputHeight, filterHeight, stride, padding);
+            const outputWidth = calculateOutputSize(inputWidth, filterWidth, stride, padding);
+
+            // Calculate cell size
+            const margin = 60;
+            const spacing = 100;
+            const availableWidth = canvas.width - 2 * margin - spacing;
+            const maxDim = Math.max(paddedWidth, paddedHeight, outputWidth, outputHeight);
+            const cellSize = Math.min(30, availableWidth / (paddedWidth + outputWidth + 2));
+
+            const inputX = margin;
+            const inputY = (canvas.height - paddedHeight * cellSize) / 2;
+            const outputX = inputX + paddedWidth * cellSize + spacing;
+            const outputY = (canvas.height - outputHeight * cellSize) / 2;
+
+            // Draw title
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Padded Input (${paddedHeight}×${paddedWidth})`, inputX + (paddedWidth * cellSize) / 2, inputY - 20);
+            ctx.fillText(`Output (${outputHeight}×${outputWidth})`, outputX + (outputWidth * cellSize) / 2, outputY - 20);
+
+            // Draw padded input grid
+            for (let y = 0; y < paddedHeight; y++) {
+                for (let x = 0; x < paddedWidth; x++) {
+                    const isPadding = x < padding || x >= paddedWidth - padding ||
+                                     y < padding || y >= paddedHeight - padding;
+
+                    ctx.fillStyle = isPadding ? 'rgba(155, 89, 182, 0.3)' : 'rgba(52, 152, 219, 0.3)';
+                    ctx.fillRect(
+                        inputX + x * cellSize,
+                        inputY + y * cellSize,
+                        cellSize - 1,
+                        cellSize - 1
+                    );
+
+                    // Draw cell border
+                    ctx.strokeStyle = '#2c3e50';
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(
+                        inputX + x * cellSize,
+                        inputY + y * cellSize,
+                        cellSize - 1,
+                        cellSize - 1
+                    );
+                }
+            }
+
+            // Draw output grid
+            const positions = getFilterPositions(inputHeight, inputWidth, filterHeight, filterWidth, stride, padding);
+            for (let y = 0; y < outputHeight; y++) {
+                for (let x = 0; x < outputWidth; x++) {
+                    const idx = y * outputWidth + x;
+                    const isGenerated = idx <= currentStep;
+
+                    ctx.fillStyle = isGenerated ? 'rgba(46, 204, 113, 0.6)' : 'rgba(200, 200, 200, 0.3)';
+                    ctx.fillRect(
+                        outputX + x * cellSize,
+                        outputY + y * cellSize,
+                        cellSize - 1,
+                        cellSize - 1
+                    );
+
+                    ctx.strokeStyle = '#2c3e50';
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(
+                        outputX + x * cellSize,
+                        outputY + y * cellSize,
+                        cellSize - 1,
+                        cellSize - 1
+                    );
+
+                    // Draw index if generated
+                    if (isGenerated && cellSize > 15) {
+                        ctx.fillStyle = '#2c3e50';
+                        ctx.font = 'bold 10px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(
+                            idx + 1,
+                            outputX + x * cellSize + cellSize / 2,
+                            outputY + y * cellSize + cellSize / 2
+                        );
+                    }
+                }
+            }
+
+            // Draw current filter position (only if animation has started)
+            if (currentStep >= 0 && currentStep < positions.length) {
+                const pos = positions[currentStep];
+
+                ctx.fillStyle = 'rgba(231, 76, 60, 0.5)';
+                ctx.fillRect(
+                    inputX + pos.startX * cellSize,
+                    inputY + pos.startY * cellSize,
+                    filterWidth * cellSize - 1,
+                    filterHeight * cellSize - 1
+                );
+
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(
+                    inputX + pos.startX * cellSize,
+                    inputY + pos.startY * cellSize,
+                    filterWidth * cellSize - 1,
+                    filterHeight * cellSize - 1
+                );
+
+                // Draw arrow
+                const arrowStartX = inputX + (pos.startX + filterWidth / 2) * cellSize;
+                const arrowStartY = inputY + (pos.startY + filterHeight / 2) * cellSize;
+                const arrowEndX = outputX + (pos.outputX + 0.5) * cellSize;
+                const arrowEndY = outputY + (pos.outputY + 0.5) * cellSize;
+
+                ctx.strokeStyle = '#f39c12';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(arrowStartX, arrowStartY);
+                ctx.lineTo(arrowEndX, arrowEndY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw arrowhead
+                const angle = Math.atan2(arrowEndY - arrowStartY, arrowEndX - arrowStartX);
+                ctx.fillStyle = '#f39c12';
+                ctx.beginPath();
+                ctx.moveTo(arrowEndX, arrowEndY);
+                ctx.lineTo(
+                    arrowEndX - 10 * Math.cos(angle - Math.PI / 6),
+                    arrowEndY - 10 * Math.sin(angle - Math.PI / 6)
+                );
+                ctx.lineTo(
+                    arrowEndX - 10 * Math.cos(angle + Math.PI / 6),
+                    arrowEndY - 10 * Math.sin(angle + Math.PI / 6)
+                );
+                ctx.fill();
+
+                // Draw step info
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(
+                    `Filter (${filterHeight}×${filterWidth}) at (row:${pos.startY}, col:${pos.startX}) → Output (${pos.outputY}, ${pos.outputX})`,
+                    margin,
+                    canvas.height - 20
+                );
+            }
+
+            updateDisplays();
+        }
+
+        // Animation controls
+        function nextStep() {
+            const inputHeight = parseInt(inputHeightSlider.value);
+            const inputWidth = parseInt(inputWidthSlider.value);
+            const filterHeight = parseInt(filterHeightSlider.value);
+            const filterWidth = parseInt(filterWidthSlider.value);
+            const stride = parseInt(strideSlider.value);
+            const padding = parseInt(paddingSlider.value);
+            const positions = getFilterPositions(inputHeight, inputWidth, filterHeight, filterWidth, stride, padding);
+
+            if (currentStep < positions.length - 1) {
+                currentStep++;
+                draw();
+            } else {
+                stopAnimation();
+            }
+        }
+
+        function reset() {
+            currentStep = -1;  // Reset to no output generated
+            stopAnimation();
+            draw();
+        }
+
+        function generateAll() {
+            const inputHeight = parseInt(inputHeightSlider.value);
+            const inputWidth = parseInt(inputWidthSlider.value);
+            const filterHeight = parseInt(filterHeightSlider.value);
+            const filterWidth = parseInt(filterWidthSlider.value);
+            const stride = parseInt(strideSlider.value);
+            const padding = parseInt(paddingSlider.value);
+            const positions = getFilterPositions(inputHeight, inputWidth, filterHeight, filterWidth, stride, padding);
+
+            stopAnimation();
+            currentStep = positions.length - 1;  // Jump to last step
+            draw();
+        }
+
+        function playAnimation() {
+            if (isPlaying) {
+                stopAnimation();
+            } else {
+                isPlaying = true;
+                document.getElementById('playBtn').innerHTML = '⏸️ Pause';
+                const speed = parseInt(speedSlider.value);
+                animationTimer = setInterval(nextStep, speed);
+            }
+        }
+
+        function stopAnimation() {
+            isPlaying = false;
+            document.getElementById('playBtn').innerHTML = '▶️ Play Animation';
+            if (animationTimer) {
+                clearInterval(animationTimer);
+                animationTimer = null;
+            }
+        }
+
+        function setPreset(inputHeight, inputWidth, filterHeight, filterWidth, stride, padding) {
+            stopAnimation();
+            inputHeightSlider.value = inputHeight;
+            inputWidthSlider.value = inputWidth;
+            filterHeightSlider.value = filterHeight;
+            filterWidthSlider.value = filterWidth;
+            strideSlider.value = stride;
+            paddingSlider.value = padding;
+            reset();
+        }
+
+        // Sync number inputs with sliders
+        function syncInputWithSlider(inputId, sliderId) {
+            const input = document.getElementById(inputId);
+            const slider = document.getElementById(sliderId);
+
+            input.addEventListener('input', () => {
+                let value = parseInt(input.value);
+                const min = parseInt(input.min);
+                const max = parseInt(input.max);
+
+                // Validate and clamp value
+                if (isNaN(value)) return;
+                value = Math.max(min, Math.min(max, value));
+
+                slider.value = value;
+                input.value = value;
+
+                stopAnimation();
+                reset();
+            });
+
+            // Validate on blur
+            input.addEventListener('blur', () => {
+                if (input.value === '' || isNaN(parseInt(input.value))) {
+                    input.value = slider.value;
+                }
+            });
+        }
+
+        // Event listeners
+        document.getElementById('playBtn').addEventListener('click', playAnimation);
+        document.getElementById('stepBtn').addEventListener('click', nextStep);
+        document.getElementById('generateBtn').addEventListener('click', generateAll);
+        document.getElementById('resetBtn').addEventListener('click', reset);
+
+        [inputHeightSlider, inputWidthSlider, filterHeightSlider, filterWidthSlider, strideSlider, paddingSlider].forEach(slider => {
+            slider.addEventListener('input', () => {
+                stopAnimation();
+                reset();
+            });
+        });
+
+        speedSlider.addEventListener('input', () => {
+            if (isPlaying) {
+                stopAnimation();
+                playAnimation();
+            }
+            document.getElementById('speedInput').value = speedSlider.value;
+        });
+
+        // Sync number inputs with sliders
+        syncInputWithSlider('inputHeightInput', 'inputHeight');
+        syncInputWithSlider('inputWidthInput', 'inputWidth');
+        syncInputWithSlider('filterHeightInput', 'filterHeight');
+        syncInputWithSlider('filterWidthInput', 'filterWidth');
+        syncInputWithSlider('strideInput', 'stride');
+        syncInputWithSlider('paddingInput', 'padding');
+
+        // Speed input sync
+        document.getElementById('speedInput').addEventListener('input', () => {
+            let value = parseInt(document.getElementById('speedInput').value);
+            const min = 100;
+            const max = 2000;
+
+            if (isNaN(value)) return;
+            value = Math.max(min, Math.min(max, value));
+
+            speedSlider.value = value;
+            document.getElementById('speedInput').value = value;
+
+            if (isPlaying) {
+                stopAnimation();
+                playAnimation();
+            }
+        });
+
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>
